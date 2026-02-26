@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate"
+    style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Manage Categories</h1>
+        <p style="color: var(--text-secondary);">Customize your tracking by adding custom income and expense types</p>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Add Category Form -->
+    <div class="glass animate stagger-1" style="padding: 1.75rem; align-self: start;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">New Category</h3>
+            <i class="fas fa-tags" style="color: var(--primary);"></i>
+        </div>
+        <form method="POST">
+            <div class="form-group">
+                <label>Category Name</label>          
+                <input type="text" name="name" required placeholder="e.g., Subscription, Grocery">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="type" required>
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                </select>
+            </div>
+            <button type="submit" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-plus"></i> Create Category
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Categories -->
+    <div class="glass animate stagger-2" style="padding: 1.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Existing Categories</h3>
+
+            <!-- Category Segmented Control -->
+            <div
+                style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 4px; display: flex; gap: 4px; border: 1px solid var(--border);">
+                <button class="filter-btn active" data-filter="all"
+                    style="padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; box-shadow: none; background: transparent;">All</button>
+                <button class="filter-btn" data-filter="income"
+                    style="padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; box-shadow: none; background: transparent;">Income</button>
+                <button class="filter-btn" data-filter="expense"
+                    style="padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; box-shadow: none; background: transparent;">Expense</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="categoryTableBody">
+                    {% for cat in categories %}
+                    <tr class="category-row" data-type="{{ cat.type }}">
+                        <td style="font-weight: 600; color: var(--text-primary);">{{ cat.name }}</td>
+                        <td>
+                            <span class="badge {{ 'badge-income' if cat.type == 'income' else 'badge-expense' }}">
+                                {{ cat.type|capitalize }}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <form action="{{ url_for('delete_category', id=cat.id) }}" method="POST"
+                                onsubmit="return confirm('Delete this category?')">
+                                <button type="submit"
+                                    style="background: transparent; color: var(--expense); width: auto; padding: 0.5rem; border: none; box-shadow: none; opacity: 0.6; transition: 0.2s;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .filter-btn.active {
+        background: var(--primary) !important;
+        color: white !important;
+    }
+
+    .filter-btn:not(.active):hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const rows = document.querySelectorAll('.category-row');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.getAttribute('data-filter');
+
+                // Update buttons
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Filter rows
+                rows.forEach(row => {
+                    if (filter === 'all' || row.getAttribute('data-type') === filter) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

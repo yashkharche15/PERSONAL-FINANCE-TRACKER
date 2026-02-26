@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="margin-bottom: 2.5rem;" class="animate">
+    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Welcome back, {{ current_user.username }}</h1>
+    <p style="color: var(--text-secondary); font-size: 1.1rem;">Here's your financial pulse for this month.</p>
+</div>
+
+<!-- Key Stats -->
+<div class="grid">
+    <div class="stat-card glass animate stagger-1">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Total Balance</span>
+            <i class="fas fa-wallet" style="color: var(--primary); opacity: 0.8;"></i>
+        </div>
+        <span class="stat-value" id="balance-val">₹{{ "%.2f"|format(balance) }}</span>
+    </div>
+    <div class="stat-card glass animate stagger-2">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Monthly Income</span>
+            <i class="fas fa-arrow-trend-up" style="color: var(--success); opacity: 0.8;"></i>
+        </div>
+        <span class="stat-value income">₹{{ "%.2f"|format(income) }}</span>
+    </div>
+    <div class="stat-card glass animate stagger-3">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Monthly Expenses</span>
+            <i class="fas fa-arrow-trend-down" style="color: var(--expense); opacity: 0.8;"></i>
+        </div>
+        <span class="stat-value expense">₹{{ "%.2f"|format(expense) }}</span>
+    </div>
+</div>
+
+<div class="grid" style="margin-top: 2rem; grid-template-columns: 2fr 1fr;">
+    <!-- Chart Section -->
+    <div class="chart-container glass animate stagger-2">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Expense Distribution</h3>
+            <i class="fas fa-chart-pie" style="color: var(--text-dim);"></i>
+        </div>
+        <div style="position: relative; height: 320px;">
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Budget Alerts Section -->
+    <div class="glass animate stagger-3" style="padding: 1.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Budget Alerts</h3>
+            <i class="fas fa-bell" style="color: var(--warning);"></i>
+        </div>
+        {% if alerts %}
+        {% for alert in alerts %}
+        <div style="margin-bottom: 1.75rem;">
+            <div class="alert-item" style="margin-bottom: 0.75rem;">
+                <span style="font-weight: 600; color: var(--text-primary);">{{ alert.category }}</span>
+                <span
+                    style="font-size: 0.85rem; color: {% if alert.percent > 90 %}var(--expense){% else %}var(--warning){% endif %}; font-weight: 700;">
+                    {{ alert.percent }}%
+                </span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"
+                    style="width: {{ [alert.percent, 100]|min }}%; background: {% if alert.percent > 100 %}var(--expense){% else %}var(--primary){% endif %};">
+                </div>
+            </div>
+            <p
+                style="font-size: 0.8rem; margin-top: 8px; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                <span>Spent ₹{{ "%.2f"|format(alert.spent) }}</span>
+                <span>Limit ₹{{ "%.2f"|format(alert.limit) }}</span>
+            </p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align: center; margin-top: 3rem; color: var(--text-dim);">
+            <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <p>Your budgets are on track!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="glass" style="margin-top: 2rem; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3>Recent Transactions</h3>
+        <a href="{{ url_for('transactions') }}"
+            style="color: var(--primary); text-decoration: none; font-size: 0.9rem;">View All</a>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in recent_transactions %}
+                <tr>
+                    <td>{{ tx.date.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge {{ 'badge-income' if tx.category.type == 'income' else 'badge-expense' }}">{{
+                            tx.category.name }}</span></td>
+                    <td>{{ tx.description }}</td>
+                    <td
+                        style="font-weight: 600; color: {% if tx.category.type == 'income' %}var(--success){% else %}var(--text-main){% endif %};">
+                        {{ '+' if tx.category.type == 'income' else '-' }}₹{{ "%.2f"|format(tx.amount) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/chart-data')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('expenseChart').getContext('2d');
+
+                if (data.labels.length === 0) {
+                    // Show empty state if no data
+                    ctx.font = "16px Inter";
+                    ctx.fillStyle = "#94a3b8";
+                    ctx.textAlign = "center";
+                    ctx.fillText("No expense data for this month", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.values,
+                            backgroundColor: [
+                                '#6366f1', '#10b981', '#f59e0b', '#ef4444',
+                                '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: '#94a3b8',
+                                    padding: 20,
+                                    font: {
+                                        family: 'Inter',
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            });
+    });
+</script>
+{% endblock %}

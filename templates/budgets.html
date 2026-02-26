@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate"
+    style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Budget Management</h1>
+        <p style="color: var(--text-secondary);">Set monthly limits and take control of your spending</p>
+    </div>
+    <div
+        style="background: rgba(129, 140, 248, 0.1); padding: 0.75rem 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
+        <i class="fas fa-calendar-alt" style="color: var(--primary); margin-right: 0.5rem;"></i>
+        <span style="font-weight: 600; font-size: 0.95rem;">{{ now.strftime('%B %Y') if now else 'Current Month'
+            }}</span>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Set Budget Form -->
+    <div class="glass animate stagger-1" style="padding: 1.75rem; align-self: start;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Set Limit</h3>
+            <i class="fas fa-sliders" style="color: var(--primary);"></i>
+        </div>
+        <form method="POST">
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category_id" required>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Monthly Limit (₹)</label>
+                <input type="number" step="0.01" name="amount" required placeholder="0.00">
+            </div>
+            <button type="submit" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-check"></i> Set Budget
+            </button>
+        </form>
+    </div>
+
+    <!-- Active Budgets -->
+    <div class="glass animate stagger-2" style="padding: 1.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+            <h3 style="font-size: 1.25rem;">Active Budgets</h3>
+            <i class="fas fa-shield-halved" style="color: var(--success);"></i>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Limit</th>
+                        <th>Spent</th>
+                        <th>Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for budget in budgets %}
+                    {% set spending = budget.current_spending %}
+                    {% set percent = (spending / budget.amount * 100) if budget.amount > 0 else 0 %}
+                    <tr>
+                        <td><strong style="color: var(--text-primary);">{{ budget.category.name }}</strong></td>
+                        <td style="font-family: 'Outfit'; font-weight: 600;">₹{{ "%.2f"|format(budget.amount) }}</td>
+                        <td
+                            style="font-family: 'Outfit'; font-weight: 600; color: {% if percent > 100 %}var(--expense){% else %}var(--text-secondary){% endif %};">
+                            ₹{{ "%.2f"|format(spending) }}
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="progress-bar" style="width: 100px; flex-shrink: 0;">
+                                    <div class="progress-fill"
+                                        style="width: {{ [percent, 100]|min }}%; background: {% if percent > 100 %}var(--expense){% elif percent > 85 %}var(--warning){% else %}var(--success){% endif %};">
+                                    </div>
+                                </div>
+                                <span
+                                    style="font-size: 0.85rem; font-weight: 700; color: {% if percent > 100 %}var(--expense){% elif percent > 85 %}var(--warning){% else %}var(--success){% endif %};">
+                                    {{ "%.0f"|format(percent) }}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 4rem;">
+                            <i class="fas fa-piggy-bank"
+                                style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.2;"></i>
+                            <p>No budgets set for this month.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

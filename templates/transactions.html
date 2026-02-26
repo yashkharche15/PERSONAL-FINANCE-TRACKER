@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="animate"
+    style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Transactions</h1>
+        <p style="color: var(--text-secondary);">Manage and track your cash flow</p>
+    </div>
+    <button onclick="document.getElementById('addTxForm').scrollIntoView({behavior: 'smooth'})" class="btn">
+        <i class="fas fa-plus"></i> Add New Transaction
+    </button>
+</div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr;">
+    <!-- Transactions List -->
+    <div class="glass animate stagger-1" style="padding: 1.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Recent History</h3>
+            <i class="fas fa-history" style="color: var(--text-dim);"></i>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td style="white-space: nowrap;">{{ tx.date.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            <span
+                                class="badge {{ 'badge-income' if tx.category.type == 'income' else 'badge-expense' }}">
+                                {{ tx.category.name }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-secondary);">{{ tx.description or '-' }}</td>
+                        <td
+                            style="font-family: 'Outfit'; font-weight: 700; font-size: 1.1rem; color: {% if tx.category.type == 'income' %}var(--success){% else %}var(--text-primary){% endif %};">
+                            {{ '+' if tx.category.type == 'income' else '-' }}₹{{ "%.2f"|format(tx.amount) }}
+                        </td>
+                        <td style="text-align: right;">
+                            <form action="{{ url_for('delete_transaction', id=tx.id) }}" method="POST"
+                                style="display: inline;" onsubmit="return confirm('Delete this transaction?')">
+                                <button type="submit"
+                                    style="background: transparent; color: var(--expense); width: auto; padding: 0.5rem; border: none; box-shadow: none; opacity: 0.6; transition: 0.2s;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 4rem;">
+                            <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.2;"></i>
+                            <p>No transactions found. Start by adding one!</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Transaction Form -->
+    <div class="glass animate stagger-2" style="padding: 1.75rem; align-self: start;" id="addTxForm">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem;">Add Data</h3>
+            <i class="fas fa-keyboard" style="color: var(--primary);"></i>
+        </div>
+        <form method="POST">
+            <div class="form-group">
+                <label>Amount (₹)</label>
+                <input type="number" step="0.01" name="amount" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <label style="margin-bottom: 0;">Category</label>
+                    <a href="{{ url_for('categories') }}"
+                        style="color: var(--primary); font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-plus-circle"></i> Add New
+                    </a>
+                </div>
+                <select name="category_id" required>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.type|capitalize }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="date" value="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label>Description (Optional)</label>
+                <textarea name="description" rows="3" placeholder="Lunch at office..."></textarea>
+            </div>
+            <button type="submit" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-save"></i> Save Transaction
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

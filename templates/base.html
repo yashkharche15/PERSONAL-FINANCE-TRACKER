@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WealthWise | Personal Finance Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="glass">
+        <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="logo">
+            <i class="fas fa-gem"></i>
+            <span>WealthWise</span>
+        </a>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">
+                <i class="fas fa-gauge-high"></i> Dashboard
+            </a>
+            <a href="{{ url_for('transactions') }}" class="{{ 'active' if request.endpoint == 'transactions' }}">
+                <i class="fas fa-list-ul"></i> Transactions
+            </a>
+            <a href="{{ url_for('budgets') }}" class="{{ 'active' if request.endpoint == 'budgets' }}">
+                <i class="fas fa-piggy-bank"></i> Budgets
+            </a>
+            <a href="{{ url_for('categories') }}" class="{{ 'active' if request.endpoint == 'categories' }}">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="{{ url_for('logout') }}" style="color: var(--expense);">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="{{ 'active' if request.endpoint == 'login' }}">Login</a>
+            <a href="{{ url_for('register') }}" class="{{ 'active' if request.endpoint == 'register' }}">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container animate">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert-box glass {{ category if category != 'message' else 'error' }}">
+            <i
+                class="fas {% if category == 'success' %}fa-circle-check{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Common utility to format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+            }).format(amount);
+        }
+    </script>
+</body>
+
+</html>
